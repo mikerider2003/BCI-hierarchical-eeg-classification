@@ -188,6 +188,8 @@ def hierarchical_loss(
     smartphone_targets,
     stage1_weight: float = 0.5,
     stage2_weight: float = 0.5,
+    stage1_class_weights=None,
+    stage2_class_weights=None,
 ):
     """
     Loss for hierarchical training.
@@ -210,7 +212,11 @@ def hierarchical_loss(
     """
 
     # Stage 1 uses all samples
-    loss_stage1 = F.cross_entropy(stage1_logits, binary_targets)
+    loss_stage1 = F.cross_entropy(
+        stage1_logits,
+        binary_targets,
+        weight=stage1_class_weights,
+    )
 
     # Stage 2 uses only smartphone samples
     smartphone_mask = binary_targets == 1
@@ -219,6 +225,7 @@ def hierarchical_loss(
         loss_stage2 = F.cross_entropy(
             stage2_logits[smartphone_mask],
             smartphone_targets[smartphone_mask],
+            weight=stage2_class_weights,
         )
     else:
         loss_stage2 = torch.tensor(

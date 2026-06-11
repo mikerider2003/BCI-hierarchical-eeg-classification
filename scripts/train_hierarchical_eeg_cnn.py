@@ -64,6 +64,12 @@ def standardize(X_train, *others):
     return out
 
 
+def class_weights(y, n_classes, device):
+    counts = np.bincount(y, minlength=n_classes).astype(np.float64)
+    weights = counts.sum() / (n_classes * np.clip(counts, 1, None))
+    return torch.tensor(weights, dtype=torch.float32, device=device)
+
+
 def make_hierarchical_targets(y_flat, video_idx, flat_to_smartphone_idx):
     """Create binary and smartphone-subclass targets from original flat labels."""
     y_binary = (y_flat != video_idx).astype(np.int64)
@@ -114,6 +120,8 @@ def train_one(
     model,
     train_loader,
     val_loader,
+    stage1_class_weights,
+    stage2_class_weights,
     device,
     args,
     video_idx,
@@ -142,6 +150,8 @@ def train_one(
                 y_smartphone,
                 stage1_weight=args.stage1_loss_weight,
                 stage2_weight=args.stage2_loss_weight,
+                stage1_class_weights=stage1_class_weights,
+                stage2_class_weights=stage2_class_weights,
             )
             loss.backward()
             opt.step()
@@ -260,6 +270,8 @@ def main():
         ytr_phone, yva_phone = y_smartphone[tr], y_smartphone[va]
 
         model = build_model(args, n_channels, n_samples, n_smartphone_classes, device)
+        stage1_class_weights = class_weights(ytr_bin, 2, device)
+        stage2_class_weights = class_weights(ytr_phone[ytr_bin == 1], n_smartphone_classes, device)
 
         train_loader = make_loader(Xtr, ytr_flat, ytr_bin, ytr_phone, args.batch_size, True)
         val_loader = make_loader(Xva, yva_flat, yva_bin, yva_phone, args.batch_size, False)
@@ -268,6 +280,8 @@ def main():
             model=model,
             train_loader=train_loader,
             val_loader=val_loader,
+            stage1_class_weights=stage1_class_weights,
+            stage2_class_weights=stage2_class_weights,
             device=device,
             args=args,
             video_idx=video_idx,
@@ -313,11 +327,15 @@ def main():
 
     print("\n=== Final model (train on pool, eval on test) ===", flush=True)
     final = build_model(args, n_channels, n_samples, n_smartphone_classes, device)
+    stage1_class_weights = class_weights(yfit_bin, 2, device)
+    stage2_class_weights = class_weights(yfit_phone[yfit_bin == 1], n_smartphone_classes, device)
 
     best_state, _ = train_one(
         model=final,
         train_loader=make_loader(Xfit, yfit_flat, yfit_bin, yfit_phone, args.batch_size, True),
         val_loader=make_loader(Xes, yes_flat, yes_bin, yes_phone, args.batch_size, False),
+        stage1_class_weights=stage1_class_weights,
+        stage2_class_weights=stage2_class_weights,
         device=device,
         args=args,
         video_idx=video_idx,
