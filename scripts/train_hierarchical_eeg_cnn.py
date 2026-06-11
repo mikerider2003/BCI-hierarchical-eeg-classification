@@ -310,10 +310,14 @@ def main():
         flush=True,
     )
 
-    # ---- Final model: reuse one subject-disjoint fold for early stopping, then test ----
+    # ---- Final model: train on full train/val pool, evaluate on test ----
+    # Hold out a small slice of the train/val pool for early stopping.
+    tv = splits["train_val_idx"]
     te = splits["test_idx"]
-    final_fold = splits["folds"][0]
-    fit_idx, es_idx = final_fold["train_idx"], final_fold["val_idx"]
+    rng = np.random.default_rng(args.seed)
+    perm = rng.permutation(len(tv))
+    n_es = max(1, int(0.1 * len(tv)))
+    es_idx, fit_idx = tv[perm[:n_es]], tv[perm[n_es:]]
 
     Xfit, Xes, Xte = standardize(X[fit_idx], X[es_idx], X[te])
     yfit_flat, yes_flat, yte_flat = y_flat[fit_idx], y_flat[es_idx], y_flat[te]
