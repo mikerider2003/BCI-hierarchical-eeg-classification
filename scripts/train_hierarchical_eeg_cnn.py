@@ -20,7 +20,6 @@ from pathlib import Path
 import numpy as np
 import torch
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
-from sklearn.model_selection import StratifiedShuffleSplit
 from torch.utils.data import DataLoader, TensorDataset
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -311,14 +310,10 @@ def main():
         flush=True,
     )
 
-    # ---- Final model: train on train/val pool, evaluate on held-out test subjects ----
-    tv = splits["train_val_idx"]
+    # ---- Final model: reuse one subject-disjoint fold for early stopping, then test ----
     te = splits["test_idx"]
-
-    # Stratified early-stopping slice inside the train/val pool.
-    splitter = StratifiedShuffleSplit(n_splits=1, test_size=0.1, random_state=args.seed)
-    fit_rel, es_rel = next(splitter.split(np.zeros(len(tv)), y_flat[tv]))
-    fit_idx, es_idx = tv[fit_rel], tv[es_rel]
+    final_fold = splits["folds"][0]
+    fit_idx, es_idx = final_fold["train_idx"], final_fold["val_idx"]
 
     Xfit, Xes, Xte = standardize(X[fit_idx], X[es_idx], X[te])
     yfit_flat, yes_flat, yte_flat = y_flat[fit_idx], y_flat[es_idx], y_flat[te]
