@@ -65,7 +65,7 @@ def plot_confusion_matrices_side_by_side(
     save_path=None,
     normalize=False,
 ):
-    short_classes = _short_class_labels(classes)
+    short_classes = ["SG", "SR", "SSV", "V"]
     class_colors = [_class_group_color(class_name) for class_name in classes]
 
     cm1 = np.array(confusion_1)
@@ -93,10 +93,10 @@ def plot_confusion_matrices_side_by_side(
         colorbar=False,
     )
 
-    axes[0].set_title(title_1, pad=4, fontsize=10)
-    axes[0].set_xlabel("Predicted label", labelpad=2, fontsize=9)
-    axes[0].set_ylabel("True label", labelpad=2, fontsize=9)
-    axes[0].tick_params(axis="both", labelsize=8, pad=1)
+    axes[0].set_title(title_1, pad=4, fontsize=11)
+    axes[0].set_xlabel("Predicted label", labelpad=2, fontsize=11)
+    axes[0].set_ylabel("True label", labelpad=2, fontsize=11)
+    axes[0].tick_params(axis="both", labelsize=11, pad=1)
 
     disp2 = ConfusionMatrixDisplay(
         confusion_matrix=cm2,
@@ -110,10 +110,10 @@ def plot_confusion_matrices_side_by_side(
         colorbar=False,
     )
 
-    axes[1].set_title(title_2, pad=4, fontsize=10)
-    axes[1].set_xlabel("Predicted label", labelpad=2, fontsize=9)
+    axes[1].set_title(title_2, pad=4, fontsize=11)
+    axes[1].set_xlabel("Predicted label", labelpad=2, fontsize=11)
     axes[1].set_ylabel("")
-    axes[1].tick_params(axis="both", labelsize=8, pad=1)
+    axes[1].tick_params(axis="both", labelsize=11, pad=1)
     axes[1].tick_params(axis="y", labelleft=False)
 
 
@@ -140,19 +140,6 @@ def plot_confusion_matrices_side_by_side(
     plt.show()
 
 
-def _short_class_labels(classes):
-    labels = []
-    for class_name in classes:
-        parts = class_name.replace("-", "_").split("/")
-        if len(parts) > 1:
-            labels.append("".join(part[0].upper() for part in parts[:-1]) + _initials(parts[-1]))
-        else:
-            labels.append(_initials(parts[0]))
-    return labels
-
-
-def _initials(text):
-    return "".join(part[0].upper() for part in text.split("_") if part)
 
 
 def _color_tick_labels(ax, colors, color_y):
@@ -165,9 +152,12 @@ def _color_tick_labels(ax, colors, color_y):
 
 
 def _class_group_color(class_name):
-    if class_name.startswith("smartphone"):
-        return "tab:blue"
-    return "tab:red"
+    return {
+        "smartphone/gaming": "tab:blue",
+        "smartphone/reading": "tab:blue",
+        "smartphone/short_videos": "tab:blue",
+        "video": "tab:red",
+    }[class_name]
 
 def main():
     EEG_PATH = Path("outputs/eegnet_baseline/")
