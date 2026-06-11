@@ -1,5 +1,5 @@
-# scripts/visualization/cms.py
-# python -m scripts.visualization.cms
+# scripts/results/cms.py
+# python -m scripts.results.cms
 
 import json
 from pathlib import Path
